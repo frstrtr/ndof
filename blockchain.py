@@ -1,4 +1,4 @@
-
+import functools
 """
 genesis = 'The Times 03/Jan/2009 Chancellor on brink of second bailout for banks'
 blockchain = [1,2,3,4,5,6,7,8,9,10]
@@ -19,6 +19,19 @@ owner = 'Max'
 participants = {'Max'}
 
 
+class bcolors:
+    # Colour text output definitions
+
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
 def hash_block(block):
     return '-'.join([str(block[key]) for key in block])
 
@@ -29,16 +42,12 @@ def get_balance(participant):
     open_tx_sender = [tx['amount']
                       for tx in open_transactions if tx['sender'] == participant]
     tx_sender.append(open_tx_sender)
-    amount_sent = 0
-    for tx in tx_sender:
-        if len(tx) > 0:
-            amount_sent += tx[0]
+    amount_sent = functools.reduce(
+        lambda tx_sum, tx_amt: tx_sum+tx_amt[0] if len(tx_amt) > 0 else 0, tx_sender, 0)
     tx_recipient = [[tx['amount'] for tx in block['transactions']
                      if tx['recipient'] == participant] for block in blockchain]
-    amount_received = 0
-    for tx in tx_recipient:
-        if len(tx) > 0:
-            amount_received += tx[0]
+    amount_received = functools.reduce(
+        lambda tx_sum, tx_amt: tx_sum+tx_amt[0] if len(tx_amt) > 0 else 0, tx_recipient, 0)
     return amount_received - amount_sent  # The balance
 
 
@@ -149,7 +158,7 @@ while waiting_for_input:
             print('Added transaction!')
         else:
             print('Transaction failed!')
-        print(open_transactions)
+        print(bcolors.OKGREEN, open_transactions, bcolors.ENDC)
     elif user_choice == '2':
         if mine_block():
             open_transactions = []
@@ -179,7 +188,8 @@ while waiting_for_input:
         print('Invalid Blockchain!')
         # Break out of the loop
         waiting_for_input = False
-    print(get_balance('Max'))
+    print(bcolors.OKBLUE+'Balance of {}: {:6.2f}'.format('Max',
+                                                         get_balance('Max')), bcolors.ENDC)
 else:
     print('User left!')
 
