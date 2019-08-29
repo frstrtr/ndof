@@ -1,7 +1,8 @@
-import functools
+from functools import reduce
 import hashlib
 from collections import OrderedDict
 
+# Import two functions from our hash_util.py file. Omit the ".py" in the import
 from hash_util import hash_string_256, hash_block
 
 """
@@ -34,14 +35,7 @@ participants = {'Max'}
 class bcolors:
     # Color text output definitions
 
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+load_data()
 
 
 def valid_proof(transactions, last_hash, proof):
@@ -136,6 +130,11 @@ def mine_block():
     hashed_block = hash_block(last_block)
     proof = proof_of_work()
     # Miners should be rewarded, so let's create a reward transaction
+    # reward_transaction = {
+    #     'sender': 'MINING',
+    #     'recipient': owner,
+    #     'amount': MINING_REWARD
+    # }
     reward_transaction = OrderedDict(
         [('sender', 'MINED'), ('recipient', owner), ('amount', MINING_REWARD)])
     # Copy transaction instead of manipulating the original open_transactions list
@@ -149,6 +148,7 @@ def mine_block():
         'proof': proof
     }
     blockchain.append(block)
+    save_data()
     return True
 
 
