@@ -1,9 +1,24 @@
-from functools import reduce
+import functools
 import hashlib
 from collections import OrderedDict
+import json
+import pickle
 
-# Import two functions from our hash_util.py file. Omit the ".py" in the import
 from hash_util import hash_string_256, hash_block
+
+
+class bcolors:
+    # Color text output definitions
+
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 
 """
 genesis = 'The Times 03/Jan/2009 Chancellor on brink of second bailout for banks'
@@ -12,6 +27,7 @@ print(genesis)
 """
 
 # The reward we give to miners (for creating a new block)
+
 MINING_REWARD = 10
 
 # Our starting block for the blockchain
@@ -32,14 +48,53 @@ owner = 'Max'
 participants = {'Max'}
 
 
-class bcolors:
-    # Color text output definitions
+def load_data():
+    with open('blockchain.txt', mode='r') as f:
+        # file_content = pickle.loads(f.read())
+        file_content = f.readlines()
+        # print(file_content)
+        global blockchain
+        global open_transactions
+        # blockchain = file_content['chain']
+        # open_transactions = file_content['ot']
+        blockchain = json.loads(file_content[0][:-1])
+        updated_blockchain = []
+        for block in blockchain:
+            updated_block = {
+                'previous_hash': block['previous_hash'],
+                'index': block['index'],
+                'proof': block['proof'],
+                'transactions': [OrderedDict(
+                    [('sender', tx['sender']), ('recipient', tx['recipient']), ('amount', tx['amount'])]) for tx in block['transactions']]
+            }
+            updated_blockchain.append(updated_block)
+        blockchain = updated_blockchain
+
+        open_transactions = json.loads(file_content[1])
+        updated_transactions = []
+        for tx in open_transactions:
+            updated_transaction = [OrderedDict([(
+                'sender', tx['sender']), ('recipient', tx['recipient']), ('amount', tx['amount'])]) for tx in block['transactions']]
+            updated_transactions.append(updated_transaction)
+        open_transactions = updated_transactions
+
 
 load_data()
 
 
+def save_data():
+    with open('blockchain.txt', mode='w') as f:
+        f.write(json.dumps(blockchain))
+        f.write('\n')
+        f.write(json.dumps(open_transactions))
+
+        # save_data = {'chain': blockchain, 'ot': open_transactions}
+        # f.write(pickle.dumps(save_data))
+
+
 def valid_proof(transactions, last_hash, proof):
     guess = (str(transactions) + str(last_hash) + str(proof)).encode()
+    print(guess)
     guess_hash = hash_string_256(guess)
     print(guess_hash)
     return guess_hash[0:2] == '00'
@@ -63,10 +118,12 @@ def get_balance(participant):
     # This fetches sent amounts of transactions that were already included in blocks of the blockchain
     tx_sender = [[tx['amount'] for tx in block['transactions']
                   if tx['sender'] == participant] for block in blockchain]
+
     # Fetch a list of all sent coin amounts for the given person (empty lists are returned if the person was NOT the sender)
     # This fetches sent amounts of open transactions (to avoid double spending)
     open_tx_sender = [tx['amount']
                       for tx in open_transactions if tx['sender'] == participant]
+
     tx_sender.append(open_tx_sender)
     print(tx_sender)
     amount_sent = functools.reduce(
@@ -118,6 +175,7 @@ def add_transaction(recipient, sender=owner, amount=1.0):
         open_transactions.append(transaction)
         participants.add(sender)
         participants.add(recipient)
+        save_data()
         return True
     return False
 
@@ -130,11 +188,6 @@ def mine_block():
     hashed_block = hash_block(last_block)
     proof = proof_of_work()
     # Miners should be rewarded, so let's create a reward transaction
-    # reward_transaction = {
-    #     'sender': 'MINING',
-    #     'recipient': owner,
-    #     'amount': MINING_REWARD
-    # }
     reward_transaction = OrderedDict(
         [('sender', 'MINED'), ('recipient', owner), ('amount', MINING_REWARD)])
     # Copy transaction instead of manipulating the original open_transactions list
@@ -147,6 +200,7 @@ def mine_block():
         'transactions': copied_transactions,
         'proof': proof
     }
+
     blockchain.append(block)
     save_data()
     return True
@@ -224,6 +278,7 @@ while waiting_for_input:
     elif user_choice == '2':
         if mine_block():
             open_transactions = []
+            save_data()
     elif user_choice == '3':
         print_blockchain_elements()
     elif user_choice == '4':
@@ -248,7 +303,7 @@ while waiting_for_input:
         print('Input was invalid, please pick a value from the list!')
     if not verify_chain():
         print_blockchain_elements()
-        print('Invalid Blockchain!')
+        print(bcolors.WARNING+'Invalid Blockchain!'+bcolors.ENDC)
         # Break out of the loop
         break
     print(bcolors.OKBLUE+'Balance of {}: {:6.2f}'.format('Max',
