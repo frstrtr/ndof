@@ -14,5 +14,7 @@ def hash_block(block):
     """
     # test json format output
     # print(hashlib.sha256(json.dumps(block).encode()))
-    return hash_string_256(json.dumps(block, sort_keys=True).encode())
+    hashable_block = block.__dict__.copy()
+    hashable_block['transactions'] = [tx.to_ordered_dict() for tx in hashable_block['transactions']]
+    return hash_string_256(json.dumps(hashable_block, sort_keys=True).encode())
     # old relese: '-'.join([str(block[key]) for key in block])
