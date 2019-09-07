@@ -10,11 +10,12 @@ import hashlib
 import json
 import pickle
 
-from hash_util import hash_block
+from utility.hash_util import hash_block
+from utility.colors import Bcolors
+from utility.verification import Verification
+
 from block import Block
 from transaction import Transaction
-from colors import Bcolors
-from verification import Verification
 
 
 # The reward we give to miners (for creating a new block)
@@ -28,7 +29,7 @@ class Blockchain:
         # Initializing our (empty) blockchain list
         self.__chain = [genesis_block]
         # Unhandled transactions
-        self.open_transactions = []
+        self.__open_transactions = []
         self.load_data()
         self.hosting_node = hosting_node_id
 
@@ -142,7 +143,7 @@ class Blockchain:
         # One required one (transaction_amount) and one optional one (last_transaction)
         # The optional one is optional because it has a default value => [1]
 
-    def add_transaction(self, recipient, sender, amount=1.0):
+    def add_transaction(self, recipient, sender, signature, amount=1.0):
         """ Append a new value as well as the last blockchain value to the blockchain.
 
         Arguments:
@@ -150,6 +151,8 @@ class Blockchain:
             :recipient: The recipient of the coins.
             :amount The amount of coins sent with the transaction (default = 1.0).
         """
+        if self.hosting_node == None:
+            return False
         transaction = Transaction(sender, recipient, amount)
         if Verification.verify_transaction(transaction, self.get_balance):
             self.__open_transactions.append(transaction)
@@ -160,6 +163,8 @@ class Blockchain:
     def mine_block(self):
         """Create a new block and add open transactions to it."""
         # Fetch the currently last block of the blockchain
+        if self.hosting_node == None:
+            return False
         last_block = self.__chain[-1]
         # Hash the last block (=> to be able to compare it to the stored hash value)
         hashed_block = hash_block(last_block)
