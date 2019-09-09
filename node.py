@@ -120,11 +120,13 @@ def broadcast_block():
             response = {'message': 'Block seems invalid.'}
             return jsonify(response), 409
     elif block['index'] > blockchain.chain[-1].index:
-        response = {'message': 'Blockchain seems to differ from local blockchain.'}
+        response = {
+            'message': 'Blockchain seems to differ from local blockchain.'}
         blockchain.resolve_conflicts = True
         return jsonify(response), 200
-    else: 
-        response = {'message': 'Blockchain seems to be shorter, block not added'}
+    else:
+        response = {
+            'message': 'Blockchain seems to be shorter, block not added'}
         return jsonify(response), 409
 
 
